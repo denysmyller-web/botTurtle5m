@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acesso ao painel</title>
+    <style>
+        :root { --cyan: #30d9ff; --green: #35f2b0; --red: #ff557f; --ink: #eefcff; --muted: #7e9aa5; }
+        * { box-sizing: border-box; }
+        html, body { min-height: 100%; }
+        body { display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 20px; color: var(--ink); background: radial-gradient(circle at 20% 10%, rgba(48,217,255,.13), transparent 35%), radial-gradient(circle at 80% 90%, rgba(216,107,255,.12), transparent 35%), #000; font-family: Bahnschrift, "Segoe UI", sans-serif; }
+        .login { width: min(100%, 410px); padding: 30px; background: #071116; border: 1px solid #1b5362; box-shadow: 0 0 28px rgba(48,217,255,.12); }
+        .eyebrow { color: var(--green); font-size: .75rem; letter-spacing: .12em; }
+        h1 { margin: 10px 0 8px; color: var(--cyan); font-family: Georgia, serif; font-size: 2.4rem; font-weight: 400; text-shadow: 0 0 18px rgba(48,217,255,.4); }
+        p { color: var(--muted); margin: 0 0 26px; }
+        form { display: grid; gap: 14px; }
+        label { color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; }
+        input { width: 100%; margin-top: 6px; padding: 12px; color: var(--ink); background: #03080b; border: 1px solid #256375; font: inherit; }
+        input:focus { outline: 1px solid var(--cyan); box-shadow: 0 0 12px rgba(48,217,255,.2); }
+        button { margin-top: 8px; padding: 13px; color: #001015; background: var(--green); border: 0; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 0 16px rgba(53,242,176,.25); }
+        .error { padding: 10px; color: var(--red); border: 1px solid rgba(255,85,127,.5); background: rgba(255,85,127,.08); }
+    </style>
+</head>
+<body>
+    <main class="login">
+        <div class="eyebrow">BYBIT / PRIVATE ACCESS</div>
+        <h1>Painel seguro</h1>
+        <p>Entre com suas credenciais para acessar o monitoramento.</p>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <form method="post" autocomplete="on">
+            <label>Usuário<input name="username" type="text" autocomplete="username" required autofocus></label>
+            <label>Senha<input name="password" type="password" autocomplete="current-password" required></label>
+            <button type="submit">Entrar no painel</button>
+        </form>
+    </main>
+</body>
+</html>

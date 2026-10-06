@@ -1,0 +1,1 @@
+Nenhum trade fechado para gerar relatório.

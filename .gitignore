@@ -1,0 +1,6 @@
+env.txt
+__pycache__/
+*.pyc
+professional_trade_history.csv
+coin_analysis_log.csv
+performance_report.md

@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Trade Painel Pro</title>
+    <style>
+        :root {
+            --bg: #070b10;
+            --card: #0d141c;
+            --card-2: #101a24;
+            --line: #1c2b3a;
+            --ink: #e8f4ff;
+            --muted: #6d8598;
+            --green: #2ee6a8;
+            --red: #ff5c7a;
+            --cyan: #38c8ff;
+            --amber: #ffb84d;
+            --violet: #a78bfa;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            color: var(--ink);
+            background:
+                radial-gradient(900px 400px at 85% -10%, rgba(56,200,255,.09), transparent 60%),
+                radial-gradient(700px 350px at -10% 20%, rgba(167,139,250,.07), transparent 60%),
+                var(--bg);
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .shell { width: min(1280px, calc(100% - 28px)); margin: 0 auto; padding: 26px 0 60px; }
+
+        /* ---------- header ---------- */
+        header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+        .brand { display: flex; align-items: center; gap: 14px; }
+        .logo {
+            width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
+            font-size: 22px; background: linear-gradient(135deg, rgba(56,200,255,.22), rgba(167,139,250,.22));
+            border: 1px solid rgba(56,200,255,.35); box-shadow: 0 0 24px rgba(56,200,255,.18);
+        }
+        .brand h1 { margin: 0; font-size: 1.45rem; font-weight: 700; letter-spacing: .01em; }
+        .brand p { margin: 2px 0 0; color: var(--muted); font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; }
+        .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .pill {
+            display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 999px;
+            font-size: .78rem; font-weight: 600; border: 1px solid var(--line); background: var(--card);
+        }
+        .pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.on { background: var(--green); box-shadow: 0 0 10px var(--green); animation: pulse 1.6s infinite; }
+        .dot.off { background: var(--red); }
+        .dot.warn { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+        @keyframes pulse { 50% { opacity: .45; } }
+        .mode-badge { border-color: rgba(255,184,77,.4); color: var(--amber); }
+        .mode-badge.live { border-color: rgba(255,92,122,.5); color: var(--red); }
+
+        /* ---------- grid de métricas ---------- */
+        .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 14px; }
+        .metric {
+            position: relative; padding: 16px 16px 14px; border-radius: 16px; overflow: hidden;
+            background: linear-gradient(160deg, var(--card-2), var(--card));
+            border: 1px solid var(--line);
+            transition: transform .15s ease, border-color .15s ease;
+        }
+        .metric:hover { transform: translateY(-2px); border-color: #29435c; }
+        .metric::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent, var(--cyan)); opacity: .85; }
+        .metric-label { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; display: flex; gap: 6px; align-items: center; }
+        .metric-value { display: block; margin-top: 10px; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+        .metric-sub { display: block; margin-top: 4px; color: var(--muted); font-size: .72rem; }
+        .positive { color: var(--green); } .negative { color: var(--red); } .neutral { color: var(--ink); }
+        .a-green { --accent: var(--green); } .a-red { --accent: var(--red); } .a-cyan { --accent: var(--cyan); }
+        .a-amber { --accent: var(--amber); } .a-violet { --accent: var(--violet); }
+
+        /* ---------- alerta de risco ---------- */
+        .risk-alert {
+            display: none; align-items: center; gap: 10px; margin-bottom: 14px; padding: 12px 16px;
+            border-radius: 12px; font-size: .85rem; font-weight: 600;
+            background: rgba(255,92,122,.08); border: 1px solid rgba(255,92,122,.4); color: var(--red);
+        }
+        .risk-alert.show { display: flex; }
+        .risk-alert.cooldown { background: rgba(255,184,77,.08); border-color: rgba(255,184,77,.4); color: var(--amber); }
+
+        /* ---------- painéis ---------- */
+        .panel {
+            background: linear-gradient(160deg, var(--card-2), var(--card));
+            border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin-bottom: 14px;
+        }
+        .panel h2 { margin: 0 0 4px; font-size: 1rem; font-weight: 700; }
+        .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+        .subtitle { color: var(--muted); font-size: .78rem; }
+        .panel-wide { grid-column: 1 / -1; }
+
+        /* ---------- controles ---------- */
+        .controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+        .control-group { display: grid; gap: 5px; min-width: 140px; }
+        label { color: var(--muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; }
+        input {
+            width: 100%; padding: 10px 12px; color: var(--ink); background: #0a1118;
+            border: 1px solid #22374a; border-radius: 10px; font: inherit;
+        }
+        input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(56,200,255,.12); }
+        button {
+            min-height: 40px; padding: 0 16px; border: 0; border-radius: 10px; font: inherit; font-weight: 700;
+            cursor: pointer; transition: filter .15s ease, transform .1s ease;
+        }
+        button:hover { filter: brightness(1.12); } button:active { transform: scale(.97); }
+        .btn-start { background: var(--green); color: #032117; }
+        .btn-stop { background: var(--red); color: #2b060f; }
+        .btn-ghost { background: transparent; color: var(--ink); border: 1px solid #2b4358; }
+        .divider { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+
+        /* ---------- scan ---------- */
+        .scan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 9px; max-height: 480px; overflow-y: auto; padding-right: 4px; }
+        .scan-grid::-webkit-scrollbar { width: 6px; } .scan-grid::-webkit-scrollbar-thumb { background: #22374a; border-radius: 3px; }
+        .coin { padding: 12px 13px; border-radius: 13px; background: #0a1118; border: 1px solid #1a2a3a; transition: border-color .2s; }
+        .coin.analyzing { border-color: var(--amber); }
+        .coin.buy { border-color: rgba(46,230,168,.55); box-shadow: 0 0 14px rgba(46,230,168,.1); }
+        .coin.sell { border-color: rgba(255,92,122,.55); box-shadow: 0 0 14px rgba(255,92,122,.1); }
+        .coin-top, .coin-bottom { display: flex; justify-content: space-between; gap: 8px; }
+        .coin-top strong { color: var(--cyan); font-size: .92rem; }
+        .coin-status { color: var(--muted); font-size: .68rem; }
+        .coin-bottom { color: var(--muted); font-size: .7rem; margin-top: 7px; }
+        .coin-details { display: grid; gap: 4px; margin-top: 9px; color: var(--muted); font-size: .68rem; line-height: 1.45; }
+        .coin-risk.approved { color: var(--green); } .coin-risk.waiting { color: var(--amber); }
+        .score-chip { display: inline-block; padding: 1px 7px; border-radius: 999px; font-weight: 700; font-size: .66rem; background: #14202d; color: var(--cyan); }
+
+        /* ---------- layout ---------- */
+        .layout { display: grid; grid-template-columns: 1.2fr .8fr; gap: 14px; }
+        .position-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+        .position-chart-card { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: #0a1118; }
+        .position-chart-card h3 { margin: 0; color: var(--cyan); font-size: .9rem; }
+        .position-chart { height: 300px; }
+        #capital-chart { min-height: 300px; }
+
+        /* ---------- posições / tabela ---------- */
+        .position { display: grid; grid-template-columns: 1.3fr repeat(4, 1fr); gap: 12px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); }
+        .position strong { font-size: 1.05rem; }
+        .data-label { color: var(--muted); display: block; font-size: .66rem; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .06em; }
+        .badge { padding: 4px 10px; border-radius: 999px; background: #14202d; border: 1px solid #22374a; color: var(--cyan); font-size: .7rem; font-weight: 600; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+        th, td { padding: 11px 9px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+        th { color: var(--muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .07em; }
+        .empty { padding: 24px 0 8px; color: var(--muted); text-align: center; }
+
+        @media (max-width: 1000px) { .metrics { grid-template-columns: repeat(3, 1fr); } .layout { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) { .metrics { grid-template-columns: repeat(2, 1fr); } .controls { align-items: stretch; } .control-group { min-width: 100%; } .position { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <header>
+        <div class="brand">
+            <div class="logo">⚡</div>
+            <div>
+                <h1>Trade Painel Pro</h1>
+                <p>Bybit · USDT Perp · v2</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="pill mode-badge {{ 'live' if mode_label == 'LIVE' }}">{{ '🔴 LIVE' if mode_label == 'LIVE' else '🧪 TESTNET' }}</span>
+            <span class="pill"><span class="dot {{ 'on' if bot_running else 'off' }}" id="status-dot"></span><span id="bot-status">{{ 'RODANDO' if bot_running else 'PARADO' }}</span></span>
+            <span class="pill">Posições: <strong id="current-position" style="margin-left:5px">{{ open_positions | length }}/{{ max_open_positions }}</strong></span>
+        </div>
+    </header>
+
+    <div id="risk-alert" class="risk-alert {{ 'show cooldown' if cooldown_active else '' }} {{ 'show' if trading_halted else '' }}">
+        ⚠️ <span>{{ 'Limite de perda diária atingido — negociação pausada até amanhã.' if trading_halted else ('Pausa de proteção ativa após ' ~ consecutive_losses ~ ' perdas consecutivas.') }}</span>
+    </div>
+
+    <section class="metrics" aria-label="Resumo financeiro">
+        <article class="metric a-cyan"><span class="metric-label">💰 Saldo disponível</span><strong class="metric-value" id="bybit-balance">{% if available_wallet_balance is not none %}${{ available_wallet_balance | round(2) }}{% else %}—{% endif %}</strong><span class="metric-sub" id="bybit-balance-source">{{ wallet_balance_source }}</span></article>
+        <article class="metric a-cyan"><span class="metric-label">🧾 Exposição estimada</span><strong class="metric-value" id="entry-notional-estimate">{% if entry_amount is not none %}${{ entry_amount | round(2) }}{% else %}—{% endif %}</strong><span class="metric-sub">Margem: $<span id="entry-margin-estimate">{% if entry_margin_amount is not none %}{{ entry_margin_amount | round(2) }}{% else %}—{% endif %}</span> · <span id="entry-leverage-estimate">{{ leverage }}x</span></span></article>
+        <article class="metric a-green"><span class="metric-label">📈 Lucro realizado</span><strong class="metric-value {{ 'positive' if total_profit >= 0 else 'negative' }}">${{ total_profit | round(2) }}</strong><span class="metric-sub">parciais ${{ partial_realized | round(2) }}</span></article>
+        <article class="metric a-violet"><span class="metric-label">🎯 Win rate</span><strong class="metric-value">{{ win_rate | round(1) }}%</strong><span class="metric-sub">{{ winning_trades }}W / {{ losing_trades }}L</span></article>
+        <article class="metric a-amber"><span class="metric-label">⚖️ Profit factor</span><strong class="metric-value">{{ profit_factor | round(2) }}</strong><span class="metric-sub">média ${{ avg_win | round(2) }} / -${{ avg_loss | round(2) }}</span></article>
+        <article class="metric {{ 'a-green' if total_return >= 0 else 'a-red' }}"><span class="metric-label">🚀 Retorno</span><strong class="metric-value {{ 'positive' if total_return >= 0 else 'negative' }}">{{ total_return | round(2) }}%</strong><span class="metric-sub">drawdown máx {{ max_drawdown_pct | round(1) }}%</span></article>
+    </section>
+
+    <section class="panel" aria-label="Controles do bot">
+        <div class="controls">
+            <div class="control-group"><label for="leverage">Alavancagem (x)</label><input id="leverage" type="number" min="1" max="10" step="1" value="{{ leverage }}"></div>
+            <div class="control-group"><label for="position-pct">Saldo por entrada (%)</label><input id="position-pct" type="number" value="100" readonly><span class="subtitle">100% do saldo livre como margem · 3x de exposição na alavancagem atual · sem reserva</span></div>
+            <button class="btn-ghost" type="button" onclick="saveSettings()">Salvar configuração</button>
+            <div class="divider"></div>
+            <div class="control-group"><label for="old-password">Senha atual</label><input id="old-password" type="password" placeholder="•••" style="width:125px"></div>
+            <div class="control-group"><label for="new-password">Nova senha</label><input id="new-password" type="password" placeholder="•••" style="width:125px"></div>
+            <button class="btn-ghost" type="button" onclick="changeAdminPassword()">Alterar senha</button>
+            <div style="margin-left:auto;display:flex;gap:10px;">
+                <button class="btn-start" type="button" onclick="startBot()">▶ Iniciar bot</button>
+                <button class="btn-stop" type="button" onclick="stopBot()">■ Finalizar bot</button>
+                <form method="post" action="/logout" style="margin:0"><button class="btn-ghost" type="submit">Sair</button></form>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel" aria-label="Moedas analisadas em tempo real">
+        <div class="panel-head">
+            <div><h2>Radar de oportunidades</h2><span class="subtitle">Análise em tempo real · vela 1h</span></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <span class="subtitle" id="scan-summary">Aguardando análise</span>
+                <button class="btn-ghost" style="min-height:32px;padding:0 10px;font-size:.75rem" type="button" onclick="clearScannedCoins()">Limpar</button>
+                <button class="btn-ghost" style="min-height:32px;padding:0 10px;font-size:.75rem" type="button" onclick="downloadAnalysisLog()">⬇ Log CSV</button>
+            </div>
+        </div>
+        <div class="scan-grid" id="scan-grid"><p class="empty">Clique em “Iniciar bot” para começar a análise.</p></div>
+    </section>
+
+    <section class="panel panel-wide" aria-label="Gráficos de 5 minutos das posições abertas">
+        <div class="panel-head">
+            <div><h2>Gráficos das moedas compradas</h2><span class="subtitle">Preço por candle de 5 minutos · os gráficos saem ao fechar a posição</span></div>
+            <span class="subtitle" id="position-chart-summary">Carregando posições...</span>
+        </div>
+        <div class="position-charts" id="open-position-charts"><p class="empty">Carregando posições abertas...</p></div>
+    </section>
+
+    <div class="layout">
+        <article class="panel">
+            <div class="panel-head">
+                <div><h2>Posições abertas</h2><span class="subtitle">fonte: {{ positions_source }} · limite: {{ max_open_positions }} simultâneas</span></div>
+                <span class="badge" id="open-position-count">{{ open_positions | length }} / {{ max_open_positions }}</span>
+            </div>
+            {% if open_positions %}
+                <div id="open-position-list">
+                    {% for position in open_positions %}
+                    <div class="position">
+                        <div><strong>{{ position.symbol }}</strong><span class="data-label">{{ position.side }} · {{ position.pattern }}</span></div>
+                        <div><span class="data-label">Qtd</span>{{ position.quantity | round(4) }}</div>
+                        <div><span class="data-label">Entrada</span>${{ position.entry_price | round(5) }}</div>
+                        <div><span class="data-label">Stop</span>${{ position.stop_loss | round(5) }}</div>
+                        <div><span class="data-label">Alvo</span>${{ position.take_profit | round(5) }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}<div id="open-position-list"><p class="empty">Nenhuma posição aberta no momento.</p></div>{% endif %}
+        </article>
+
+        <article class="panel">
+            <div class="panel-head"><div><h2>Estatísticas da estratégia</h2><span class="subtitle">Entradas calculadas sobre o saldo livre, sem multiplicador de alavancagem</span></div></div>
+            <div class="position" style="border-top:0;">
+                <div><span class="data-label">Expectativa por trade</span><strong class="{{ 'positive' if expectancy >= 0 else 'negative' }}">${{ expectancy | round(3) }}</strong></div>
+                <div><span class="data-label">Não realizado</span><strong class="{{ 'positive' if total_unrealized >= 0 else 'negative' }}">${{ total_unrealized | round(2) }}</strong></div>
+            </div>
+            <div class="position">
+                <div><span class="data-label">Ganhos brutos</span><strong class="positive">${{ total_wins | round(2) }}</strong></div>
+                <div><span class="data-label">Perdas brutas</span><strong class="negative">-${{ total_losses | round(2) }}</strong></div>
+            </div>
+            <div class="position">
+                <div><span class="data-label">Perdas consecutivas</span><strong>{{ consecutive_losses }} / 3</strong></div>
+                <div><span class="data-label">Percentual configurado do saldo (mín. $30 de margem)</span><strong class="entry-percent">{{ position_size_pct }}%</strong></div>
+            </div>
+        </article>
+
+        <article class="panel panel-wide">
+            <div class="panel-head"><div><h2>Curva de patrimônio</h2><span class="subtitle">lucros parciais e realizados em ordem de execução</span></div></div>
+            <div id="capital-chart"></div>
+        </article>
+
+        <article class="panel panel-wide">
+            <div class="panel-head"><div><h2>Histórico de negociação</h2><span class="subtitle">{{ open_positions | length }} posição(ões) em aberto · {{ closed_trades | length }} operações fechadas</span></div></div>
+            <div class="table-wrap"><table>
+                <thead><tr><th>Data</th><th>Moeda</th><th>Lado</th><th>Entrada</th><th>Saída</th><th>Valor</th><th>Resultado</th><th>Motivo</th></tr></thead>
+                <tbody>
+                {% for trade in history_trades %}
+                <tr>
+                    <td>{{ trade.time.split('T')[0] if trade.time else '—' }}</td>
+                    <td><strong>{{ trade.symbol }}</strong></td>
+                    <td>{{ 'LONG' if trade.type == 'BUY' else 'SHORT' }}</td>
+                    <td>${{ trade.entry_price | round(5) }}</td>
+                    <td>{% if trade.exit_price is not none %}${{ trade.exit_price | round(5) }}{% else %}—{% endif %}</td>
+                    <td>${{ trade.usdt_value | round(2) }}</td>
+                    <td class="{{ 'neutral' if trade.status == 'OPEN' else ('positive' if trade.profit >= 0 else 'negative') }}">{% if trade.status == 'OPEN' %}Não realizado: ${{ trade.profit | round(2) }}{% else %}${{ trade.profit | round(2) }}{% endif %}</td>
+                    <td>{{ 'EM ABERTO' if trade.status == 'OPEN' else trade.status.replace('_', ' ') }}</td>
+                </tr>
+                {% else %}<tr><td colspan="8" class="empty">Nenhuma operação registrada.</td></tr>{% endfor %}
+                </tbody>
+            </table></div>
+        </article>
+    </div>
+</main>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script id="capital-data" type="application/json">{{ capital_history | tojson }}</script>
+<script>
+    const PLOTLY_BASE = { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { family: 'Segoe UI, sans-serif', color: '#6d8598', size: 11 }, margin: { t: 12, r: 16, b: 48, l: 60 } };
+    const GRID = { gridcolor: '#16222e', zerolinecolor: '#24384c' };
+    let availableEntryBalance = {{ available_wallet_balance | tojson }};
+    const minimumEntryMargin = 30;
+
+    const capitalData = JSON.parse(document.getElementById('capital-data').textContent);
+    const maxOpenPositions = {{ max_open_positions | tojson }};
+    Plotly.newPlot('capital-chart', [{
+        x: capitalData.map(i => i.time), y: capitalData.map(i => i.capital), mode: 'lines',
+        line: { color: '#2ee6a8', width: 2.5, shape: 'hv' }, fill: 'tozeroy', fillcolor: 'rgba(46,230,168,.07)'
+    }], { ...PLOTLY_BASE, xaxis: { ...GRID, type: 'date' }, yaxis: { ...GRID, title: 'USDT' } }, { responsive: true, displayModeBar: false });
+
+    async function sendControl(url, body) {
+        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || 'Falha na operação');
+        return data;
+    }
+    async function changeAdminPassword() {
+        const oldPass = document.getElementById('old-password').value, newPass = document.getElementById('new-password').value;
+        if (!oldPass || !newPass) { alert('Preencha a senha atual e a nova senha.'); return; }
+        try {
+            const result = await sendControl('/api/change-password', { old_password: oldPass, new_password: newPass });
+            alert(result.message);
+            document.getElementById('old-password').value = ''; document.getElementById('new-password').value = '';
+        } catch (error) { alert(error.message); }
+    }
+    async function saveSettings() {
+        try {
+            const data = await sendControl('/api/settings', { leverage: Number(document.getElementById('leverage').value), position_pct: Number(document.getElementById('position-pct').value) });
+            document.querySelectorAll('.entry-percent').forEach(element => {
+                element.textContent = `${formatNumber(data.position_pct, 2)}%`;
+            });
+            updateEntryEstimate();
+            alert('Configuração salva para esta sessão.');
+        } catch (error) { alert(error.message); }
+    }
+    function updateEntryEstimate() {
+        const leverage = Number(document.getElementById('leverage').value);
+        const estimate = document.getElementById('entry-notional-estimate');
+        const marginEstimate = document.getElementById('entry-margin-estimate');
+        const exposure = Number.isFinite(availableEntryBalance) && Number.isFinite(leverage) ? availableEntryBalance : null;
+        estimate.textContent = exposure === null ? '—' : `$${formatNumber(exposure * leverage, 2)}`;
+        marginEstimate.textContent = exposure === null ? '—' : formatNumber(exposure, 2);
+        document.getElementById('entry-leverage-estimate').textContent = `${formatNumber(leverage, 0)}x`;
+    }
+    async function startBot() {
+        try {
+            const data = await sendControl('/api/start');
+            setStatus(data.running);
+        } catch (error) { setStatus(false); alert(error.message); }
+    }
+    async function stopBot() {
+        try { await sendControl('/api/stop'); setStatus(false); } catch (error) { alert(error.message); }
+    }
+    function setStatus(running) {
+        document.getElementById('bot-status').textContent = running ? 'RODANDO' : 'PARADO';
+        const dot = document.getElementById('status-dot');
+        dot.className = 'dot ' + (running ? 'on' : 'off');
+    }
+    async function clearScannedCoins() {
+        try {
+            const result = await sendControl('/api/scan-clear');
+            renderScanStatus({ coins: [], running: false });
+            document.getElementById('scan-summary').textContent = `${result.cleared} moedas removidas`;
+        } catch (error) { alert(error.message); }
+    }
+    function downloadAnalysisLog() { window.location.href = '/api/analysis-log.csv'; }
+    function formatNumber(value, digits) { return value === undefined || value === null || !Number.isFinite(Number(value)) ? '--' : Number(value).toFixed(digits); }
+    function formatVolume(value) { return value === undefined || value === null || !Number.isFinite(Number(value)) ? '--' : Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
+    function formatCheckedAt(value) {
+        if (!value) return '--';
+        const timestamp = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
+        const date = new Date(timestamp);
+        return Number.isNaN(date.getTime()) ? '--' : date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderScanStatus(data) {
+        const grid = document.getElementById('scan-grid');
+        const coins = data.coins || [];
+        document.getElementById('scan-summary').textContent = coins.length
+            ? `${coins.length} moedas · ${data.running ? 'bot ativo' : 'somente leitura'}`
+            : data.running ? 'Preparando análise' : 'Aguardando leitura de mercado';
+        if (!coins.length) {
+            grid.innerHTML = `<p class="empty">${data.running ? 'Aguardando as próximas análises.' : 'Sem dados ainda.'}</p>`;
+            return;
+        }
+        grid.innerHTML = coins.map(coin => {
+            const statusClass = coin.status === 'ANALISANDO' ? 'analyzing' : coin.status === 'COMPRA' ? 'buy' : coin.status === 'VENDA' ? 'sell' : '';
+            const analysis = coin.buy_analysis || {};
+            const riskClass = coin.status === 'COMPRA' || coin.status === 'VENDA' ? 'approved' : 'waiting';
+            const score = analysis.score;
+            const scoreChip = score !== undefined && score !== null ? `<span class="score-chip">score ${formatNumber(score, 0)}</span>` : '';
+            return `<div class="coin ${statusClass}">
+                <div class="coin-top"><strong>${coin.symbol}</strong><span class="coin-status">${coin.status} ${scoreChip}</span></div>
+                <div class="coin-bottom"><span>$${formatNumber(coin.price, 6)}</span><span>vol 1h ${formatVolume(analysis.volume_latest_5m)}</span></div>
+                <div class="coin-details">
+                    <span>Vol 1h: ${formatNumber(analysis.volume_5m_vs_avg20, 2)}x da média 20</span>
+                    <span>Variação 1h: ${formatNumber(analysis.price_change_pct, 2)}% · RSI ${formatNumber(analysis.rsi, 1)}</span>
+                    <span class="coin-risk ${riskClass}">${analysis.risk_status || 'Aguardando análise.'}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderOpenPositions(data) {
+        const positions = data.positions || [];
+        document.getElementById('open-position-count').textContent = `${positions.length} / ${maxOpenPositions}`;
+        document.getElementById('current-position').textContent = `${positions.length}/${maxOpenPositions}`;
+        const list = document.getElementById('open-position-list');
+        if (!positions.length) { list.innerHTML = '<p class="empty">Nenhuma posição aberta no momento.</p>'; return; }
+        list.innerHTML = positions.map(p => `<div class="position">
+            <div><strong>${p.symbol}</strong><span class="data-label">${p.side} · ${p.pattern}</span></div>
+            <div><span class="data-label">Qtd</span>${formatNumber(p.quantity, 4)}</div>
+            <div><span class="data-label">Entrada</span>$${formatNumber(p.entry_price, 5)}</div>
+            <div><span class="data-label">Stop</span>$${formatNumber(p.stop_loss, 5)}</div>
+            <div><span class="data-label">Alvo</span>$${formatNumber(p.take_profit, 5)}</div>
+        </div>`).join('');
+    }
+    async function refreshOpenPositions() {
+        try {
+            const response = await fetch('/api/open-positions', { cache: 'no-store' });
+            const data = await response.json();
+            if (response.ok && data.ok) renderOpenPositions(data);
+        } catch (error) { /* mantém último estado */ }
+    }
+    function renderOpenPositionCharts(charts) {
+        const container = document.getElementById('open-position-charts');
+        const summary = document.getElementById('position-chart-summary');
+        summary.textContent = `${charts.length} posição(ões) aberta(s)`;
+        if (!charts.length) {
+            container.innerHTML = '<p class="empty">Nenhuma posição aberta. Os gráficos aparecerão após uma compra.</p>';
+            return;
+        }
+
+        container.innerHTML = charts.map((item, index) => `
+            <article class="position-chart-card">
+                <h3>${item.symbol} · ${item.side}</h3>
+                <div class="subtitle">Candles de 5 min · entrada: $${formatNumber(item.entry_price, 6)}</div>
+                <div class="position-chart" id="position-chart-${index}"></div>
+            </article>
+        `).join('');
+
+        charts.forEach((item, index) => {
+            const chart = document.getElementById(`position-chart-${index}`);
+            if (!item.candles.length) {
+                chart.innerHTML = '<p class="empty">Candles de 5 minutos indisponíveis.</p>';
+                return;
+            }
+            const timestamps = item.candles.map(candle => candle.time);
+            const candleColors = item.candles.map(candle =>
+                Number(candle.close) >= Number(candle.open) ? 'rgba(46,230,168,.55)' : 'rgba(255,92,122,.55)'
+            );
+            Plotly.react(chart, [{
+                type: 'candlestick',
+                x: timestamps,
+                open: item.candles.map(candle => Number(candle.open)),
+                high: item.candles.map(candle => Number(candle.high)),
+                low: item.candles.map(candle => Number(candle.low)),
+                close: item.candles.map(candle => Number(candle.close)),
+                increasing: { line: { color: '#2ee6a8', width: 1 }, fillcolor: '#2ee6a8' },
+                decreasing: { line: { color: '#ff5c7a', width: 1 }, fillcolor: '#ff5c7a' },
+                whiskerwidth: 0.5,
+                xaxis: 'x',
+                yaxis: 'y',
+                hoverlabel: { bgcolor: '#101a24' },
+            }, {
+                type: 'bar',
+                x: timestamps,
+                y: item.candles.map(candle => Number(candle.volume)),
+                marker: { color: candleColors },
+                xaxis: 'x2',
+                yaxis: 'y2',
+                hovertemplate: '%{x|%d/%m %H:%M}<br>Volume: %{y:,.2f}<extra></extra>',
+            }], {
+                ...PLOTLY_BASE,
+                margin: { t: 14, r: 18, b: 32, l: 65 },
+                xaxis: {
+                    ...GRID,
+                    type: 'date',
+                    domain: [0, 1],
+                    anchor: 'y',
+                    showticklabels: false,
+                    rangeslider: { visible: false },
+                },
+                xaxis2: {
+                    ...GRID,
+                    type: 'date',
+                    domain: [0, 1],
+                    anchor: 'y2',
+                    matches: 'x',
+                    tickformat: '%H:%M',
+                },
+                yaxis: {
+                    ...GRID,
+                    domain: [0.25, 1],
+                    tickprefix: '$',
+                    fixedrange: true,
+                    autorange: true,
+                },
+                yaxis2: {
+                    ...GRID,
+                    domain: [0, 0.17],
+                    title: { text: 'Vol', font: { size: 9 } },
+                    fixedrange: true,
+                    showgrid: false,
+                    tickfont: { size: 9 },
+                },
+                shapes: [{
+                    type: 'line',
+                    xref: 'paper',
+                    yref: 'y',
+                    x0: 0,
+                    x1: 1,
+                    y0: Number(item.entry_price),
+                    y1: Number(item.entry_price),
+                    line: { color: '#ffb84d', width: 1, dash: 'dot' },
+                }],
+                showlegend: false,
+            }, { responsive: true, displayModeBar: false });
+        });
+    }
+    async function refreshOpenPositionCharts() {
+        try {
+            const response = await fetch('/api/open-position-charts', { cache: 'no-store' });
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.error || 'Não foi possível carregar os gráficos.');
+            renderOpenPositionCharts(data.charts || []);
+        } catch (error) {
+            document.getElementById('position-chart-summary').textContent = 'Gráficos temporariamente indisponíveis';
+        }
+    }
+    async function refreshScanStatus() {
+        try {
+            const scanResponse = await fetch('/api/scan-status', { cache: 'no-store' });
+            const scan = await scanResponse.json();
+            renderScanStatus(scan);
+            setStatus(Boolean(scan.running));
+        } catch (error) { document.getElementById('scan-summary').textContent = 'Servidor indisponível'; }
+    }
+    async function refreshWalletBalance() {
+        const source = document.getElementById('bybit-balance-source');
+        try {
+            const response = await fetch('/api/wallet-balance', { cache: 'no-store' });
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.error || data.source || 'Não foi possível consultar o saldo.');
+            availableEntryBalance = Number(data.available_usdt);
+            document.getElementById('bybit-balance').textContent = `$${formatNumber(data.available_usdt, 2)}`;
+            updateEntryEstimate();
+            source.textContent = data.cached && data.error
+                ? `${data.source} · API indisponível; mostrando último saldo`
+                : data.source;
+        } catch (error) {
+            source.textContent = `Saldo indisponível: ${error.message}`;
+        }
+    }
+    document.getElementById('position-pct').addEventListener('input', updateEntryEstimate);
+    document.getElementById('leverage').addEventListener('input', updateEntryEstimate);
+    updateEntryEstimate();
+    refreshOpenPositions(); setInterval(refreshOpenPositions, 15000);
+    refreshOpenPositionCharts(); setInterval(refreshOpenPositionCharts, 30000);
+    refreshScanStatus(); setInterval(refreshScanStatus, 2500);
+    refreshWalletBalance(); setInterval(refreshWalletBalance, 30000);
+</script>
+</body>
+</html>

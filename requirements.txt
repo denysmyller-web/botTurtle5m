@@ -1,0 +1,8 @@
+python-dotenv
+pandas
+numpy
+pybit>=5.17.0
+ta
+scipy
+flask
+plotly
